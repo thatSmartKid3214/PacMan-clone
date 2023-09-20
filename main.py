@@ -5,7 +5,8 @@ import Engine as E
 from enum import Enum
 from copy import deepcopy
 import random
-import time
+
+vec2 = pygame.Vector2
 
 class Direction(Enum):
     UP = 0
@@ -127,14 +128,28 @@ class Ghost:
     
     def set_target(self):
         # target is in tile position
-        self.target = self.game.tile_positions["player"]
+        if self.type == "red":
+            self.target = self.game.tile_positions["player"]
+        if self.type == "blue":
+            self.target = self.game.tile_positions["player"]
+        if self.type == "orange":
+            self.target = self.game.tile_positions["player"]
+        if self.type == "pink":
+            target = self.game.tile_positions["player"]
+            direction = self.states[self.game.player.direction][0]
+            self.target = [target[0]+(direction[0]*4), target[1]+(direction[1]*4)]
     
     def navigate(self, tiles):
         # This maze navigation applies to all modes, the only that is changes is the target
         remaining_directions = [Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT]
-        x = self.game.tile_positions[self.type][0]
-        y = self.game.tile_positions[self.type][1]
-        turns = {Direction.RIGHT: [self.level[y][x+1] == 0, self.rect.y % 8], Direction.LEFT: [self.level[y][x-1] == 0, self.rect.y % 8], Direction.DOWN: [self.level[y+1][x] == 0, self.rect.x % 8], Direction.UP: [self.level[y-1][x] == 0, self.rect.x % 8]}
+        turns = None
+        try:
+            x = self.game.tile_positions[self.type][0]
+            y = self.game.tile_positions[self.type][1]
+            turns = {Direction.RIGHT: [self.level[y][x+1] == 0, self.rect.y % 8], Direction.LEFT: [self.level[y][x-1] == 0, self.rect.y % 8], Direction.DOWN: [self.level[y+1][x] == 0, self.rect.x % 8], Direction.UP: [self.level[y-1][x] == 0, self.rect.x % 8]}
+        except:
+            pass 
+               
         if self.get_next_move:
             self.set_target()
             
@@ -172,9 +187,10 @@ class Ghost:
                         next_tile = tile[0]
                         self.get_next_move = False
         else:
-            if turns[self.next_move] == [True, 0]:
-                self.direction = self.next_move
-                self.get_next_move = True
+            if turns:
+                if turns[self.next_move] == [True, 0]:
+                    self.direction = self.next_move
+                    self.get_next_move = True
             
         movement = deepcopy(self.states[self.direction][0])
         movement[0] *= self.vel
@@ -218,10 +234,10 @@ class Game:
         self.font = E.Text("data/images/font.png", 1, 1)
         
         self.ghosts = {
-            "red": Ghost(self, 11*self.TILESIZE, 26*self.TILESIZE, "red"), 
-            "orange": Ghost(self, 10*self.TILESIZE, 26*self.TILESIZE, "orange"), 
-            "pink": Ghost(self, 8*self.TILESIZE, 26*self.TILESIZE, "pink"), 
-            "blue": Ghost(self, 7*self.TILESIZE, 26*self.TILESIZE, "blue")
+            "red": Ghost(self, 14*self.TILESIZE, 14*self.TILESIZE, "red"), 
+            "orange": Ghost(self, 15*self.TILESIZE, 17*self.TILESIZE, "orange"), 
+            "pink": Ghost(self, 14*self.TILESIZE, 17*self.TILESIZE, "pink"), 
+            "blue": Ghost(self, 11*self.TILESIZE, 14*self.TILESIZE, "blue")
             }
         
         self.sounds = {"chomp":pygame.mixer.Sound("data/audio/pacman_chomp.wav")}
@@ -336,6 +352,11 @@ class Game:
                 ghost = self.ghosts[g]
                 ghost.navigate(self.tiles)
                 ghost.draw(self.display)
+                
+                if ghost.rect.x > self.display.get_width():
+                    ghost.physics_obj.x = -7
+                if ghost.rect.topright[0] < 0:
+                    ghost.physics_obj.x = self.display.get_width()-10
             
             self.font.render(self.display, "SCORE: ", 6, 3, (0, 0, 255))
             self.font.render(self.display, "SCORE: ", 5, 2, (255, 255, 255))
